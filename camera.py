@@ -6,38 +6,28 @@ import cv2
 import torch
 import torchvision
 
-from models.pfld import PFLDInference, AuxiliaryNet
-from mtcnn.detector import detect_faces
+from models.pfld import Gaze_PFLD
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
 def main(args):
 
     checkpoint = torch.load(args.model_path, map_location=device)
     print(checkpoint.keys())
-    pfld_backbone = PFLDInference().to(device)
-    auxiliarynet = AuxiliaryNet().to(device)
+    gaze_pfld = Gaze_PFLD().to(device)
+    gaze_pfld.load_state_dict(checkpoint['gaze_pfld'])
 
-    pfld_backbone.load_state_dict(checkpoint['pfld_backbone'])
-    auxiliarynet.load_state_dict(checkpoint["auxiliarynet"])
+    gaze_pfld.eval()
 
-    pfld_backbone.eval()
-    auxiliarynet.eval()
-
-    pfld_backbone = pfld_backbone.to(device)
-    auxiliarynet = auxiliarynet.to(device)
+    gaze_pfld = gaze_pfld.to(device)
     transform = torchvision.transforms.Compose(
         [torchvision.transforms.ToTensor()])
-
 
     img = cv2.imread('5.png')
     height, width = img.shape[:2]
 
     input = cv2.resize(img, (160,112))
     input = transform(input).unsqueeze(0).to(device)
-    features, landmarks = pfld_backbone(input)
-    gaze = auxiliarynet(features) 
+    landmarks, gaze = gaze_pfld(input)
 
     pre_landmark = landmarks[0]
     #print(pre_landmark.shape)
@@ -61,7 +51,7 @@ def main(args):
 def parse_args():
     parser = argparse.ArgumentParser(description='Testing')
     parser.add_argument('--model_path',
-                        default="./checkpoint/snapshot/checkpoint_epoch_13.pth.tar",
+                        default="./checkpoint/snapshot/checkpoint_epoch_1.pth.tar",
                         type=str)
     args = parser.parse_args()
     return args

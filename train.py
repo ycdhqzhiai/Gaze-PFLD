@@ -89,7 +89,8 @@ def train(train_loader, gaze_pfld, criterion, optimizer, epoch):
         loss = gaze_loss.float() + lad_loss.float()
 
         if i_batch % 100 == 0:
-            print('Epoch: {} gaze loss: {:.4f}  loss: {:.4f} '.format(epoch, gaze_loss, loss))
+            logging.info('Epoch: {} gaze loss: {:.4f}  loss: {:.4f} '.format(epoch, gaze_loss, loss))
+            #print('Epoch: {} gaze loss: {:.4f}  loss: {:.4f} '.format(epoch, gaze_loss, loss))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -107,7 +108,7 @@ def validate(wlfw_val_dataloader, gaze_pfld, criterion):
             landmark_gt = landmark_gt.to(device)
             gaze_gt = gaze_gt.to(device)
             gaze_pfld = gaze_pfld.to(device)
-            _, landmark = gaze_pfld(img)
+            landmark, _ = gaze_pfld(img)
 
             landmark_gt = landmark_gt.reshape(-1, 51, 2)
             landmark = landmark.reshape(-1, 51, 2)
@@ -132,8 +133,6 @@ def main(args):
 
     # Step 2: model, criterion, optimizer, scheduler
     gaze_pfld = Gaze_PFLD().to(device)
-    #pfld_backbone = PFLDInference().to(device)
-    #auxiliarynet = AuxiliaryNet().to(device)
     criterion = PFLDLoss()
     optimizer = torch.optim.Adam([{'params': gaze_pfld.parameters()}], lr=args.base_lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=args.lr_patience, verbose=True)
@@ -149,23 +148,25 @@ def main(args):
     eyedataset = EyesDataset(args.datasets, dataroot=args.dataroot, transforms=transform, input_width=args.input_width, input_height=args.input_height)
 
     N = len(eyedataset)
+    print(N)
     TN = int(N * 0.95)
     VN = N - TN
     train_set, val_set = torch.utils.data.random_split(eyedataset, (TN, VN))
-    train_loader = DataLoader(train_set, batch_size=args.train_batchsize, shuffle=True, num_worker=args.workers)
-    val_loader = DataLoader(val_set, batch_size=args.val_batchsize, shuffle=True, num_worker=args.workers)
+    train_loader = DataLoader(train_set, batch_size=args.train_batchsize, shuffle=True, num_workers=args.workers)
+    val_loader = DataLoader(val_set, batch_size=args.val_batchsize, shuffle=True, num_workers=args.workers)
 
     # step 4: run
     writer = SummaryWriter(args.tensorboard)
+    if not os.path.exists(args.snapshot):
+        os.makedirs(args.snapshot)
+
     for epoch in range(args.start_epoch, args.end_epoch + 1):
         train_loss = train(train_loader, gaze_pfld, criterion, optimizer, epoch)
-        filename = os.path.join(str(args.snapshot),
-                                "checkpoint_epoch_" + str(epoch) + '.pth.tar')
+        filename = os.path.join(str(args.snapshot), "checkpoint_epoch_" + str(epoch) + '.pth.tar')
         save_checkpoint(
             {
                 'epoch': epoch,
                 'gaze_pfld': gaze_pfld.state_dict(),
-                #'auxiliarynet': auxiliarynet.state_dict()
             }, filename)
 
         val_loss = validate(val_loader, gaze_pfld,
@@ -211,7 +212,7 @@ def parse_args():
                         type=str)
     parser.add_argument(
         '--resume',
-        default='./checkpoint/snapshot/checkpoint_epoch_6.pth.tar',
+        default='',
         type=str,
         metavar='PATH')
 

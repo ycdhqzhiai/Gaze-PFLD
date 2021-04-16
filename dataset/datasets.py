@@ -100,13 +100,14 @@ class EyesDataset(data.Dataset):
         self.input_height = input_height
         self.transforms = transforms
         if datasets == 'U':
-            self.img_paths = glob.glob(os.path.join(dataroot, 'UnityEyes/images', '/*.jpg'))
+            self.img_paths = glob.glob(os.path.join(dataroot, 'UnityEyes/images') + '/*.jpg')
         elif datasets == 'E':
-            self.img_paths = glob.glob(os.path.join(dataroot, 'Eye200W/images', '/*.jpg'))
+            self.img_paths = glob.glob(os.path.join(dataroot, 'Eye200W/images') + '/*/*.jpg')
         elif datasets == 'B':
-            self.img_paths = glob.glob(os.path.join(dataroot, 'BL_Eye/images', '/*.jpg'))
+            self.img_paths = glob.glob(os.path.join(dataroot, 'BL_Eye/images') + '/*.jpg')
         self.img_paths = sorted(self.img_paths)
         self.json_paths = []
+
         for img_path in self.img_paths:
             json_files = img_path.replace('images', 'json').replace('.jpg', '.json')
             self.json_paths.append(json_files)

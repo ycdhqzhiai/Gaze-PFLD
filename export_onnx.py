@@ -36,7 +36,7 @@ import models
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default="./checkpoint/snapshot/checkpoint.pth.tar", help='weights path')  # from yolov5/models/
+    parser.add_argument('--weights', type=str, default="./checkpoint/snapshot/checkpoint_epoch_1.pth.tar", help='weights path')  # from yolov5/models/
     parser.add_argument('--img-size', nargs='+', type=int, default=[112, 160], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     opt = parser.parse_args()
@@ -45,14 +45,10 @@ if __name__ == '__main__':
     device = "cpu"
     print("=====> load pytorch checkpoint...")
     checkpoint = torch.load(opt.weights, map_location=torch.device('cpu')) 
-    nstack = checkpoint['nstack']
-    nfeatures = checkpoint['nfeatures']
-    nlandmarks = checkpoint['nlandmarks']
-
     net = Gaze_PFLD().to(device)
     net.load_state_dict(checkpoint['gaze_pfld'])
 
-    img = torch.zeros(1, 1, *opt.img_size).to(device)
+    img = torch.zeros(1, 3, *opt.img_size).to(device)
     print(img.shape)
     landmarks, gaze = net.forward(img)
     f = opt.weights.replace('.pth.tar', '.onnx')  # filename
