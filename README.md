@@ -8,6 +8,7 @@ PFLD实现Gaze Estimation
 如果是按照上面脚本生成的数据集，可以直接`python train.py`，如果是其他格式数据集，修改下dataloder
 
 ## Run demo
+[Down model](https://drive.google.com/file/d/1fw63_PCRTFulDf6jgQRCPnKPZHHoYFZ4/view?usp=sharing)
 ```
 python camera.py
 ```
